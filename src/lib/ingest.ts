@@ -93,7 +93,7 @@ export async function ingestAllFeeds(): Promise<{ ingested: number; summarized: 
         const desc        = item.contentSnippet ?? ''
         const category    = detectCategory(item.title, desc)
         const publishedAt = item.pubDate ? new Date(item.pubDate) : new Date()
-        const content     = item['content:encoded'] || item.content || desc
+        const content     = (item as any)['content:encoded'] || item.content || desc
         const readTime    = Math.max(1, Math.ceil(content.split(' ').length / 200))
         const breaking    = /breaking|urgent|just in|alert|exclusive:/i.test(item.title)
 

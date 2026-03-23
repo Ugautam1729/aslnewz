@@ -36,7 +36,7 @@ export function ShareDrawer({ article, isOpen, onClose, userId }: Props) {
         }),
       })
       if (r.ok) {
-        setSent(p => new Set([...p, friendId]))
+        setSent(p => new Set(Array.from(p).concat(friendId)))
         toast.success('Article shared!')
       }
     } catch {}

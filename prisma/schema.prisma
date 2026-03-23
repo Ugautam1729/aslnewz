@@ -1,0 +1,186 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id               String    @id @default(cuid())
+  name             String?
+  username         String?   @unique
+  email            String    @unique
+  emailVerified    DateTime?
+  image            String?
+  password         String?
+  bio              String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  accounts          Account[]
+  sessions          Session[]
+  comments          Comment[]
+  saves             Save[]
+  interests         UserInterest[]
+  commentLikes      CommentLike[]
+  sentRequests      FriendRequest[]  @relation("SentRequests")
+  receivedRequests  FriendRequest[]  @relation("ReceivedRequests")
+  friendsA          Friendship[]     @relation("FriendA")
+  friendsB          Friendship[]     @relation("FriendB")
+  notifications     Notification[]
+  seenArticles      SeenArticle[]
+  sentMessages      Message[]        @relation("MessageSender")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  @@unique([identifier, token])
+}
+
+model FriendRequest {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  status     String   @default("pending")
+  createdAt  DateTime @default(now())
+  sender     User     @relation("SentRequests",    fields: [senderId],   references: [id], onDelete: Cascade)
+  receiver   User     @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+  @@unique([senderId, receiverId])
+}
+
+model Friendship {
+  id        String   @id @default(cuid())
+  userAId   String
+  userBId   String
+  createdAt DateTime @default(now())
+  userA     User     @relation("FriendA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB     User     @relation("FriendB", fields: [userBId], references: [id], onDelete: Cascade)
+  @@unique([userAId, userBId])
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  content    String?  @db.Text
+  articleId  String?
+  articleTitle String?
+  articleImage String?
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  sender     User     @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+}
+
+model Article {
+  id          String   @id @default(cuid())
+  title       String
+  summary     String?  @db.Text
+  content     String?  @db.Text
+  imageUrl    String?
+  articleUrl  String   @unique
+  category    String   @default("General")
+  publishedAt DateTime
+  createdAt   DateTime @default(now())
+  status      String   @default("pending")
+  readTime    Int      @default(2)
+  views       Int      @default(0)
+  score       Float    @default(0)
+  breaking    Boolean  @default(false)
+
+  comments  Comment[]
+  saves     Save[]
+  seenBy    SeenArticle[]
+}
+
+model SeenArticle {
+  id        String   @id @default(cuid())
+  userId    String
+  articleId String
+  seenAt    DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  @@unique([userId, articleId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  gifUrl    String?
+  userId    String
+  articleId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article   Article       @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  likes     CommentLike[]
+}
+
+model CommentLike {
+  id        String  @id @default(cuid())
+  userId    String
+  commentId String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  @@unique([userId, commentId])
+}
+
+model Save {
+  id        String   @id @default(cuid())
+  userId    String
+  articleId String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  @@unique([userId, articleId])
+}
+
+model UserInterest {
+  id       String @id @default(cuid())
+  userId   String
+  category String
+  weight   Float  @default(0.5)
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, category])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  body      String
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

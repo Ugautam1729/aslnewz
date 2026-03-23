@@ -1,0 +1,3 @@
+{
+  "crons": [{ "path": "/api/ingest?secret=aslnewz2026", "schedule": "*/15 * * * *" }]
+}
